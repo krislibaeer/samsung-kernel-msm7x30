@@ -511,7 +511,13 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
 		task->policy,
 		(unsigned long long)delayacct_blkio_ticks(task),
 		cputime_to_clock_t(gtime),
-		cputime_to_clock_t(cgtime));
+		cputime_to_clock_t(cgtime),
+#if defined(CONFIG_SCHEDSTATS) && !defined(CONFIG_SCHED_BFS)
+		nsec_to_clock_t(task->se.statistics.iowait_sum)
+#else
+		(unsigned long long)0UL
+#endif
+		);
 	if (mm)
 		mmput(mm);
 	return 0;
