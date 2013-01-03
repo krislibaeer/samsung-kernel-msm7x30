@@ -55,3 +55,5 @@ obj-$(CONFIG_VIBETONZ)		+= vibetonz/
 obj-$(CONFIG_SAMSUNG_FM_SI4709)		+= fm_si4709/
 obj-$(CONFIG_USB_SWITCH_FSA9480)	+= fsa9480.o
 obj-$(CONFIG_VP_A2220) += a2220.o
+obj-$(CONFIG_GENERIC_BLN) += bln.o
+obj-$(CONFIG_ZERO_JPEG_COMPRESSION) += zerojpegcompression.o

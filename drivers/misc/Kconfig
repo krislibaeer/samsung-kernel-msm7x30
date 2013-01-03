@@ -539,6 +539,21 @@ config PMIC8058_BATTALARM
 	  Qualcomm PM8058 PMIC chip.  This support allows for configuration of
 	  the alarm module as well as interrupt handling.
 
+config GENERIC_BLN
+    bool "Generic BLN support for backlight notification"
+    default y
+    help
+      Say Y here to enable the backlight notification
+      for android led-notification (modified liblight needed)
+
+config ZERO_JPEG_COMPRESSION
+    bool "High photo quality for the camera"
+    default y
+    help
+      Say Y here to enable the high photo quality for camera
+      for activate it use sysfs "echo 1 > /sys/kernel/jpeg_compression/zero_jpeg_compression"
+      for disable it use sysfs "echo 0 > /sys/kernel/jpeg_compression/zero_jpeg_compression"
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
