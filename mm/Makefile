@@ -36,6 +36,7 @@ obj-$(CONFIG_KMEMCHECK) += kmemcheck.o
 obj-$(CONFIG_FAILSLAB) += failslab.o
 obj-$(CONFIG_MEMORY_HOTPLUG) += memory_hotplug.o
 obj-$(CONFIG_FS_XIP) += filemap_xip.o
+obj-$(CONFIG_CLEANCACHE) += cleancache.o
 obj-$(CONFIG_MIGRATION) += migrate.o
 ifdef CONFIG_SMP
 obj-y += percpu.o
