@@ -29,6 +29,10 @@
 #include <mach/camera.h>
 #include "ce147.h"
 
+#ifdef CONFIG_ZERO_JPEG_COMPRESSION
+#include <linux/zerojpegcompression.h>
+#endif
+
 /* values for firmware information */
 static unsigned char MAIN_SW_FW[4] = {0x0, 0x0, 0x0, 0x0};    /* {FW Maj, FW Min, PRM Maj, PRM Min} */
 static int MAIN_SW_DATE_INFO[3] = {0x0, 0x0, 0x0};        /* {Year, Month, Date} */
@@ -1755,6 +1759,22 @@ static int ce147_set_jpeg_quality(void)
     unsigned int minimumCompressionRatio = 0;
     int err;
 
+#ifdef CONFIG_ZERO_JPEG_COMPRESSION
+	if (zero_jpeg_compression != 0) {
+		compressionRatio = 100;
+	} else {
+		if(quality == 1) { // 91 ~ 100
+			CAMDRV_DEBUG("%s: SUPERFINE \n", __func__);
+			compressionRatio = 17; // 17%
+		} else if(quality==2) {    // 81 ~ 90
+			CAMDRV_DEBUG("%s: FINE \n", __func__);
+			compressionRatio = 14; // 16%
+		} else {
+			CAMDRV_DEBUG("%s: NORMAL \n", __func__);
+			compressionRatio = 8; // 15%
+		}
+	}
+#else
     if(quality == 1) { // 91 ~ 100
         CAMDRV_DEBUG("%s: SUPERFINE \n", __func__);
         compressionRatio = 17; // 17%
@@ -1765,6 +1785,7 @@ static int ce147_set_jpeg_quality(void)
         CAMDRV_DEBUG("%s: NORMAL \n", __func__);
         compressionRatio = 8; // 15%
     }
+#endif
     
     minimumCompressionRatio = compressionRatio - 3; // ex) if compression ratio is 17%, minimum compression ratio is 14%
     ce147_regbuf_jpeg_comp_level[1] = (compressionRatio * 100) & 0xFF;
