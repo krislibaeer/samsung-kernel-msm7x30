@@ -6684,7 +6684,7 @@ static int msm_sdcc_get_wpswitch(struct device *dv)
 	defined(CONFIG_CSDIO_DEVICE_ID) && \
 	(CONFIG_CSDIO_VENDOR_ID == 0x70 && CONFIG_CSDIO_DEVICE_ID == 0x1117)
 static struct mmc_platform_data msm7x30_sdc1_data = {
-	.ocr_mask	= MMC_VDD_165_195 | MMC_VDD_26_27 | MMC_VDD_27_28,
+	.ocr_mask	= MMC_VDD_165_195 | MMC_VDD_27_28 | MMC_VDD_28_29,
 	.translate_vdd	= msm_sdcc_setup_power_mbp,
 	.mmc_bus_width  = MMC_CAP_4_BIT_DATA,
 	.status	        = mbp_status,
@@ -6699,7 +6699,7 @@ static struct mmc_platform_data msm7x30_sdc1_data = {
 };
 #else
 static struct mmc_platform_data msm7x30_sdc1_data = {
-	.ocr_mask	= MMC_VDD_165_195 | MMC_VDD_21_22, //MMC_VDD_26_27 | MMC_VDD_27_28,
+	.ocr_mask	= MMC_VDD_165_195 | MMC_VDD_20_21, //MMC_VDD_26_27 | MMC_VDD_27_28,
 	.translate_vdd	= msm_sdcc_setup_power,
 	.mmc_bus_width  = MMC_CAP_4_BIT_DATA,
 	.status	        = wlan_status,
@@ -7059,7 +7059,7 @@ static void __init msm7x30_init_mmc(void)
 #endif
 #ifdef CONFIG_MMC_MSM_SDC4_SUPPORT
 	sdcc_vreg_data[3].vreg_data = vreg_mmc;
-	sdcc_vreg_data[3].level = 2850; 
+	sdcc_vreg_data[3].level = 2850;
 	msm_add_sdcc(4, &msm7x30_sdc4_data);
 #endif
 
