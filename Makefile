@@ -354,10 +354,12 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -ftree-vectorize -floop-interchange -floop-strip-mine -floop-block \
   		   -mno-unaligned-access \
-		   -march=armv7-a \
-		   -fno-delete-null-pointer-checks
+		   -fno-delete-null-pointer-checks \
+		   -march=armv7-a -mtune=cortex-a8 -mfpu=neon \
+                   -fno-tree-vectorize -ffast-math -fsingle-precision-constant \
+                   -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr
+
 KBUILD_AFLAGS   := -D__ASSEMBLY__
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
@@ -540,7 +542,7 @@ ifdef CONFIG_CC_OPTIMIZE_DEFAULT
 KBUILD_CFLAGS += -O2
 endif
 ifdef CONFIG_CC_OPTIMIZE_ALOT
-KBUILD_CFLAGS += -O3 -fmodulo-sched -fmodulo-sched-allow-regmoves -funswitch-loops -ftree-vectorize
+KBUILD_CFLAGS += -O3 -fmodulo-sched -fmodulo-sched-allow-regmoves
 endif
 ifdef CONFIG_CC_OPTIMIZE_FAST
 KBUILD_CFLAGS += -Ofast
