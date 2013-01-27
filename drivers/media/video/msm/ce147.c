@@ -28,6 +28,9 @@
 #include <mach/gpio.h>
 #include <mach/camera.h>
 #include "ce147.h"
+#ifdef CONFIG_ZERO_JPEG_COMPRESSION
+#include <linux/zerojpegcompression.h>
+#endif
 
 /* values for firmware information */
 static unsigned char MAIN_SW_FW[4] = {0x0, 0x0, 0x0, 0x0};    /* {FW Maj, FW Min, PRM Maj, PRM Min} */
@@ -1755,7 +1758,11 @@ static int ce147_set_jpeg_quality(void)
     unsigned int minimumCompressionRatio = 0;
     int err;
 
-
+#ifdef CONFIG_ZERO_JPEG_COMPRESSION
+	if (zero_jpeg_compression != 0) {
+		compressionRatio = 100;
+	} else {
+	
 	if(quality >= 91 && quality <= 100) { // 91 ~ 100
 		compressionRatio = 17; // 17%
 	}
@@ -1800,6 +1807,56 @@ static int ce147_set_jpeg_quality(void)
 		printk(KERN_ERR "[CAMDRV/CE147] CE147 :%s: Invalid Quality(%d)\n", __func__, quality);
 		compressionRatio = 8; // 8%
 	}
+	}
+#else
+	if(quality >= 91 && quality <= 100) { // 91 ~ 100
+		compressionRatio = 17; // 17%
+	}
+
+	else if(quality >= 81 && quality <= 90) {	// 81 ~ 90
+		compressionRatio = 16; // 16%
+	}
+
+	else if(quality >= 71 && quality <= 80) { // 71 ~ 80
+		compressionRatio = 15; // 15%
+	}
+
+	else if(quality >= 61 && quality <= 70) { // 61 ~ 70
+		compressionRatio = 14; // 14%
+	}
+
+	else if(quality >= 51 && quality <= 60) { // 51 ~ 60
+		compressionRatio = 13; // 13%
+	}
+	
+	else if(quality >= 41 && quality <= 50) { // 41 ~ 50
+		compressionRatio = 12; // 12%
+	}
+
+	else if(quality >= 31 && quality <= 40) { // 31 ~ 40
+		compressionRatio = 11; // 11%
+	}
+
+	else if(quality >= 21 && quality <= 30) { // 21 ~ 30
+		compressionRatio = 10; // 10%
+	}
+
+	else if(quality >= 11 && quality <= 20) { // 11 ~ 20
+		compressionRatio = 9; // 9%
+	}
+	
+	else if(quality >= 1 && quality <= 10) { // 1 ~ 10
+		compressionRatio = 8; // 8%
+	}
+
+	else {		
+		printk(KERN_ERR "[CAMDRV/CE147] CE147 :%s: Invalid Quality(%d)\n", __func__, quality);
+		compressionRatio = 8; // 8%
+	}
+#endif
+
+
+
 
 	minimumCompressionRatio = compressionRatio - 3; // ex) if compression ratio is 17%, minimum compression ratio is 14%
 	ce147_regbuf_jpeg_comp_level[1] = (compressionRatio * 100) & 0xFF;

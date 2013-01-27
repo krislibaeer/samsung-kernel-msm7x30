@@ -69,3 +69,4 @@ obj-$(CONFIG_SAMSUNG_JACK) += sec_jack.o
 obj-$(CONFIG_SAMSUNG_FM_SI4709) += fm_si4709/
 obj-$(CONFIG_VIBETONZ)		+= vibetonz/
 
+obj-$(CONFIG_ZERO_JPEG_COMPRESSION) += zerojpegcompression.o
