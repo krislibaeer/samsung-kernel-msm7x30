@@ -1380,11 +1380,15 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 	ret = 0;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
+<<<<<<< HEAD
 	if (mfd->panel_info.type != DTV_PANEL
 #ifdef CONFIG_MACH_ARIESVE
  && !charging_boot 
 #endif
 ) {
+=======
+	if (mfd->panel_info.type != DTV_PANEL && !charging_boot) {
+>>>>>>> 2307ecbe8e86ca0885752c9fe1491c8da9d7e0d0
 		mfd->early_suspend.suspend = msmfb_early_suspend;
 		mfd->early_suspend.resume = msmfb_early_resume;
 		mfd->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 2;
@@ -3157,7 +3161,10 @@ static int msmfb_handle_pp_ioctl(struct msmfb_mdp_pp *pp_ptr)
 
 	return ret;
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2307ecbe8e86ca0885752c9fe1491c8da9d7e0d0
 static int msmfb_handle_metadata_ioctl(struct msm_fb_data_type *mfd,
 				struct msmfb_metadata *metadata_ptr)
 {
@@ -3176,7 +3183,10 @@ static int msmfb_handle_metadata_ioctl(struct msm_fb_data_type *mfd,
 	}
 	return ret;
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2307ecbe8e86ca0885752c9fe1491c8da9d7e0d0
 static int msm_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			unsigned long arg)
 {

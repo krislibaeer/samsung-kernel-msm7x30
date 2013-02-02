@@ -3705,4 +3705,7 @@ int mdp4_update_base_blend(struct msm_fb_data_type *mfd,
 	}
 	return ret;
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2307ecbe8e86ca0885752c9fe1491c8da9d7e0d0

@@ -336,6 +336,16 @@ static ssize_t vsync_show_event(struct device *dev,
 
     wait_for_completion_timeout(&vctrl->vsync_comp,
 		msecs_to_jiffies(VSYNC_PERIOD * 4));
+<<<<<<< HEAD
+=======
+	if (ret <= 0) {
+		vctrl->wait_vsync_cnt = 0;
+		vsync_tick = ktime_to_ns(ktime_get());
+		ret = snprintf(buf, PAGE_SIZE, "VSYNC=%llu", vsync_tick);
+		buf[strlen(buf) + 1] = '\0';
+		return ret;
+	}
+>>>>>>> 2307ecbe8e86ca0885752c9fe1491c8da9d7e0d0
 
     ret = snprintf(buf, PAGE_SIZE, "VSYNC=%llu",
                     ktime_to_ns(vctrl->vsync_time));
