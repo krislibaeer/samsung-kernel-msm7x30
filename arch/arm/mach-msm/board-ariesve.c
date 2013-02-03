@@ -143,7 +143,20 @@ EXPORT_SYMBOL(sec_class);
 struct device *switch_dev;
 EXPORT_SYMBOL(switch_dev);
 
-#define MSM_PMEM_SF_SIZE	0x1A00000
+// Modifiable RAM-Allocation, Stock Values (365 MB):
+#ifdef CONFIG_ARIESVE_STOCKVALUES
+
+#define MSM_PMEM_SF_SIZE	        0x1700000 
+#define MSM_PMEM_ADSP_SIZE		0x1E00000 
+
+// Changes for 400 MB free RAM
+#elif CONFIG_ARIESVE_HIGHVALUES
+
+#define MSM_PMEM_SF_SIZE		0x500000  
+#define MSM_PMEM_ADSP_SIZE		0x1200000 
+
+#endif
+
 #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
 #define MSM_FB_PRIM_BUF_SIZE	(800 * 480 * 4 * 3) /* 4bpp * 3 Pages */
 #else
