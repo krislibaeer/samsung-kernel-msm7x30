@@ -4490,4 +4490,3 @@ static int __init ce147_init(void)
 module_init(ce147_init);
 MODULE_DESCRIPTION("NEC CE147-NEC 5MP camera driver");
 MODULE_LICENSE("GPL v2");
-
