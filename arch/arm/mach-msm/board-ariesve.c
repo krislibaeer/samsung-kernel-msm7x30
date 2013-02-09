@@ -143,17 +143,17 @@ EXPORT_SYMBOL(sec_class);
 struct device *switch_dev;
 EXPORT_SYMBOL(switch_dev);
 
-// Modifiable RAM-Allocation, Stock Values (365 MB):
+// Modifiable RAM-Allocation:
 #ifdef CONFIG_ARIESVE_STOCKVALUES
 
 #define MSM_PMEM_SF_SIZE	        0x1700000 
 #define MSM_PMEM_ADSP_SIZE		0x1E00000 
 
-// Changes for 400 MB free RAM
+// Changes for XXX MB free RAM
 #elif CONFIG_ARIESVE_HIGHVALUES
 
 #define MSM_PMEM_SF_SIZE		0x500000  
-#define MSM_PMEM_ADSP_SIZE		0x1200000 
+#define MSM_PMEM_ADSP_SIZE		0x2C00000 
 
 #endif
 
@@ -177,7 +177,6 @@ EXPORT_SYMBOL(switch_dev);
  * res V4L2 video overlay - i.e. 1280x720x1.5x2
  */
 #define MSM_V4L2_VIDEO_OVERLAY_BUF_SIZE 2764800
-#define MSM_PMEM_ADSP_SIZE		0x2D00000
 #define MSM_FLUID_PMEM_ADSP_SIZE	0x2800000
 #define PMEM_KERNEL_EBI0_SIZE		0x600000
 #define MSM_PMEM_AUDIO_SIZE		0x200000
