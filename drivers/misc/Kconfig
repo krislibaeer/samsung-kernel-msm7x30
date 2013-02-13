@@ -655,15 +655,17 @@ config SAMSUNG_FM_SI4709
 	  This is SI4709 FM radio driver for Samsung devices.
 
 	  If unsure, say N.
+#
+#config ZERO_JPEG_COMPRESSION
+#	bool "High photo quality for the camera"
+#	default y
+#	help
+#	  Say Y here to forces the camera to save the photos
+#	  with the highest quality and low compression.
+#	  To disable manually through sysfs:
+#	  "echo 0 > /sys/kernel/jpeg_compression/zero_jpeg_compression"
+#
 
-config ZERO_JPEG_COMPRESSION
-	bool "High photo quality for the camera"
-	default y
-	help
-	  Say Y here to forces the camera to save the photos
-	  with the highest quality and low compression.
-	  To disable manually through sysfs:
-	  "echo 0 > /sys/kernel/jpeg_compression/zero_jpeg_compression"
 
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"

@@ -143,20 +143,7 @@ EXPORT_SYMBOL(sec_class);
 struct device *switch_dev;
 EXPORT_SYMBOL(switch_dev);
 
-// Modifiable RAM-Allocation:
-#ifdef CONFIG_ARIESVE_STOCKVALUES
-
-#define MSM_PMEM_SF_SIZE	        0x1700000 
-#define MSM_PMEM_ADSP_SIZE		0x1E00000 
-
-// Changes for XXX MB free RAM
-#elif CONFIG_ARIESVE_HIGHVALUES
-
-#define MSM_PMEM_SF_SIZE		0x500000  
-#define MSM_PMEM_ADSP_SIZE		0x2C00000 
-
-#endif
-
+#define MSM_PMEM_SF_SIZE	0x600000
 #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
 #define MSM_FB_PRIM_BUF_SIZE	(800 * 480 * 4 * 3) /* 4bpp * 3 Pages */
 #else
@@ -177,9 +164,10 @@ EXPORT_SYMBOL(switch_dev);
  * res V4L2 video overlay - i.e. 1280x720x1.5x2
  */
 #define MSM_V4L2_VIDEO_OVERLAY_BUF_SIZE 2764800
+#define MSM_PMEM_ADSP_SIZE		0x2C00000
 #define MSM_FLUID_PMEM_ADSP_SIZE	0x2800000
 #define PMEM_KERNEL_EBI0_SIZE		0x600000
-#define MSM_PMEM_AUDIO_SIZE		0x200000
+#define MSM_PMEM_AUDIO_SIZE		0x000000
 
 #ifdef CONFIG_ION_MSM
 static struct platform_device ion_dev;
@@ -6207,7 +6195,7 @@ static struct mmc_platform_data msm7x30_sdc1_data = {
 };
 #else
 static struct mmc_platform_data msm7x30_sdc1_data = {
-	.ocr_mask	= MMC_VDD_165_195 | MMC_VDD_21_22 | MMC_VDD_22_23, //| MMC_VDD_27_28 | MMC_VDD_28_29,
+	.ocr_mask	= MMC_VDD_165_195 | MMC_VDD_27_28 | MMC_VDD_28_29,
 	.translate_vdd	= msm_sdcc_setup_power,
 	.mmc_bus_width  = MMC_CAP_4_BIT_DATA,
 	.status	        = wlan_status,

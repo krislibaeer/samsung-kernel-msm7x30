@@ -2167,19 +2167,4 @@ config MSM_DCVS
 	  algorithm and the algorithm returns a frequency for the core which is
 	  passed to the frequency change driver.
 
-choice
-	prompt "Optional RAM Management"
-
-config ARIESVE_STOCKVALUES
-       bool "select 352 MB RAM configuration"
-        help 
-            Stock Values for Ariesve
-
-config ARIESVE_HIGHVALUES
-       bool "select 400 MB RAM configuration"
-        help 
-            Changes to 400MB memory config. Cam (5MP-Pics + 480p-Videos) + VideoPlayback works.
-
-endchoice
-
 endif
