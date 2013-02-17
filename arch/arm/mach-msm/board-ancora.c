@@ -156,7 +156,7 @@ EXPORT_SYMBOL(switch_dev);
 
 #define MSM_FB_SIZE roundup(MSM_FB_PRIM_BUF_SIZE, 4096)
 
-#define MSM_PMEM_ADSP_SIZE		0x2D00000
+#define MSM_PMEM_ADSP_SIZE		0x2800000
 #define MSM_FLUID_PMEM_ADSP_SIZE	0x2800000
 #define PMEM_KERNEL_EBI0_SIZE		0x600000
 #define MSM_PMEM_AUDIO_SIZE		0x200000
@@ -5540,7 +5540,7 @@ static struct platform_device *devices[] __initdata = {
 	&msm_camera_sensor_s5k4ecgx,
 #endif
 #ifdef CONFIG_SENSOR_SR030PC30
-//	&msm_camera_sensor_sr030pc30,
+	&msm_camera_sensor_sr030pc30,
 #endif
 #ifdef CONFIG_MT9T013
 	&msm_camera_sensor_mt9t013,
