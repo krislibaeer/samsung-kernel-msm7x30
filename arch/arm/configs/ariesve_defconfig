@@ -1,10 +1,6 @@
 #
 # Automatically generated make config: don't edit
-<<<<<<< HEAD
-# Linux/arm 3.0.62 Kernel Configuration
-=======
 # Linux/arm 3.0.64 Kernel Configuration
->>>>>>> 8d83a9f7c4aa7083d56c7e91493f77890e5097eb
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
