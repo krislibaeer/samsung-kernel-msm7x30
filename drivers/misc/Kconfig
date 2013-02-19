@@ -666,7 +666,6 @@ config SAMSUNG_FM_SI4709
 #	  "echo 0 > /sys/kernel/jpeg_compression/zero_jpeg_compression"
 #
 
-
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
