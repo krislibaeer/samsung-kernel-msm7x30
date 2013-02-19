@@ -590,7 +590,7 @@ static void init_hw(void)
 				  GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 	gpio_set_value(_3_TOUCH_EN, 1);
 	msleep(200);
-	set_irq_type(IRQ_TOUCH_INT, IRQF_TRIGGER_FALLING);
+	irq_set_irq_type(IRQ_TOUCH_INT, IRQF_TRIGGER_FALLING);
 }
 
 static int touchkey_update_open(struct inode *inode, struct file *filp)
