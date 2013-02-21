@@ -18,11 +18,13 @@
 #include <linux/timer.h>
 #include <linux/wakelock.h>
 
-static bool bln_enabled = true; /* is BLN function is enabled */
+bool bln_enabled = false; /* is BLN function is enabled */
+EXPORT_SYMBOL(bln_enabled);
+
 static bool bln_ongoing = false; /* ongoing LED Notification */
 static int bln_blink_state = 0;
-static int bln_blink_interval = 500; /* on / off every 500ms */
-static int bln_blink_max_count = 600; /* 10 minutes */
+static int bln_blink_interval = 500;
+static int bln_blink_max_count = 600;
 static bool bln_suspended = false; /* is system suspended */
 static struct bln_implementation *bln_imp = NULL;
 static bool in_kernel_blink = false;

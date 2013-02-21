@@ -77,6 +77,8 @@ static struct timer_list bl_timer;
 static void bl_off(struct work_struct *bl_off_work);
 static DECLARE_WORK(bl_off_work, bl_off);
 
+extern bool bln_enabled;
+
 struct cypress_touchkey_devdata {
 	struct i2c_client *client;
 	struct input_dev *input_dev;
@@ -382,7 +384,7 @@ static void cypress_touchkey_early_suspend(struct early_suspend *h)
 
 	disable_irq(devdata->client->irq);
 
-#ifdef CONFIG_GENERIC_BLN
+if (bln_enabled) {
   /*
    * Disallow powering off the touchkey controller
    * while a led notification is ongoing
@@ -391,10 +393,10 @@ static void cypress_touchkey_early_suspend(struct early_suspend *h)
     devdata->pdata->touchkey_onoff(TOUCHKEY_OFF);
     //devdata->pdata->touchkey_sleep_onoff(TOUCHKEY_OFF);
   }
-#else
+} else {
 	if (!bl_on)
 		devdata->pdata->touchkey_onoff(TOUCHKEY_OFF);
-#endif
+}
 	all_keys_up(devdata);
 	devdata->is_sleeping = true;
 	printk("[TSK] -%s\n", __func__);
@@ -942,8 +944,8 @@ static int cypress_touchkey_probe(struct i2c_client *client,
 	dev_info(dev, "%s: hardware rev1 = %#02x, rev2 = %#02x\n", __func__,
 				data[1], data[2]);
 
-	devdata->backlight_on = BACKLIGHT_ON;
-	devdata->backlight_off = BACKLIGHT_OFF;
+//		devdata->backlight_on = BACKLIGHT_ON;
+//		devdata->backlight_off = BACKLIGHT_OFF;
 
 	devdata->has_legacy_keycode = 1;
 
@@ -964,7 +966,7 @@ static int cypress_touchkey_probe(struct i2c_client *client,
 				__func__);
 		/* The device may not be responding because of bad firmware
 		 */
-		goto err_backlight_on;
+		goto err_backlight_off;
 	}
 
 	if (request_threaded_irq(client->irq, touchkey_interrupt_handler,
@@ -1068,7 +1070,7 @@ static int cypress_touchkey_probe(struct i2c_client *client,
 	return 0;
 
 err_req_irq:
-err_backlight_on:
+err_backlight_off:
 	input_unregister_device(input_dev);
 	goto touchkey_off;
 err_input_reg_dev:
@@ -1096,7 +1098,7 @@ static int __devexit i2c_touchkey_remove(struct i2c_client *client)
 		enable_irq(client->irq);
 	else {
 		devdata->pdata->touchkey_onoff(TOUCHKEY_OFF);
-	devdata->is_powering_on = false;
+		devdata->is_powering_on = false;
 	}
 	free_irq(client->irq, devdata);
 	all_keys_up(devdata);
