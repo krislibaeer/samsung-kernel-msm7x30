@@ -56,7 +56,7 @@
 #define SEMC_ACPU_MAX_UV_MV 1450U
 
 extern int charging_boot;
-#define LPM_LOW_CPU_CLK 1209600
+#define LPM_LOW_CPU_CLK 245760
 
 struct clock_state {
 	struct clkctl_acpu_speed	*current_speed;
