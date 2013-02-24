@@ -944,8 +944,8 @@ static int cypress_touchkey_probe(struct i2c_client *client,
 	dev_info(dev, "%s: hardware rev1 = %#02x, rev2 = %#02x\n", __func__,
 				data[1], data[2]);
 
-//		devdata->backlight_on = BACKLIGHT_ON;
-//		devdata->backlight_off = BACKLIGHT_OFF;
+		devdata->backlight_on = BACKLIGHT_ON;
+		devdata->backlight_off = BACKLIGHT_OFF;
 
 	devdata->has_legacy_keycode = 1;
 

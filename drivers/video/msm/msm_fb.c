@@ -808,9 +808,13 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 
 			mfd->op_enable = FALSE;
 			curr_pwr_state = mfd->panel_power_on;
+			msleep(300); // HACK: wait for backlight control
 			mfd->panel_power_on = FALSE;
 
-			msleep(16);
+			/* clean fb to prevent displaying old fb */
+			memset((void *)info->screen_base, 0,
+					info->fix.smem_len);
+
 			ret = pdata->off(mfd->pdev);
 			if (ret)
 				mfd->panel_power_on = curr_pwr_state;
@@ -1380,7 +1384,7 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 	ret = 0;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	if (mfd->panel_info.type != DTV_PANEL && !charging_boot) {
+	if (mfd->panel_info.type != DTV_PANEL) {
 		mfd->early_suspend.suspend = msmfb_early_suspend;
 		mfd->early_suspend.resume = msmfb_early_resume;
 		mfd->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 2;

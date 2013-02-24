@@ -306,9 +306,6 @@ void mdp4_lcdc_wait4vsync(int cndx, long long *vtime)
 		return;
 	}
 
-	/* start timing generator & mmu if they are not started yet */
-	mdp4_overlay_lcdc_start();
-
 	spin_lock_irqsave(&vctrl->spin_lock, flags);
 
 	if (vctrl->wait_vsync_cnt == 0)
@@ -565,6 +562,7 @@ int mdp4_lcdc_on(struct platform_device *pdev)
 
 	mdp4_overlay_reg_flush(pipe, 1);
 	mdp4_mixer_stage_up(pipe, 0);
+	mdp4_mixer_stage_commit(pipe->mixer_num);
 
 
 	/*
@@ -654,6 +652,12 @@ int mdp4_lcdc_on(struct platform_device *pdev)
 
 	mdp_histogram_ctrl_all(TRUE);
 
+	/*
+	 * LCDC Block must be enabled before the time of turn on lcd
+	 * because of the signal timing.
+	 */
+	mdp4_overlay_lcdc_start();
+
 	if (!vctrl->sysfs_created) {
 		ret = sysfs_create_group(&vctrl->dev->kobj,
 			&vsync_fs_attr_group);
@@ -715,6 +719,11 @@ int mdp4_lcdc_off(struct platform_device *pdev)
 			/* adb stop */
 			if (pipe->pipe_type == OVERLAY_TYPE_BF)
 				mdp4_overlay_borderfill_stage_down(pipe);
+
+			/* base pipe may change after borderfill_stage_down */
+			pipe = vctrl->base_pipe;
+			mdp4_mixer_stage_down(pipe, 1);
+			mdp4_overlay_pipe_free(pipe);
 			vctrl->base_pipe = NULL;
 		} else {
 			/* system suspending */
@@ -874,6 +883,9 @@ void mdp4_overlay0_done_lcdc(int cndx)
 		spin_unlock(&vctrl->spin_lock);
 		return;
 	}
+
+	if (mdp_rev <= MDP_REV_41)
+		mdp4_mixer_blend_cfg(MDP4_MIXER0);
 
 	mdp4_lcdc_blt_dmap_update(pipe);
 	pipe->dmap_cnt++;
