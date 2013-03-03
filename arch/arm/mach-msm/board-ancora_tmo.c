@@ -5959,7 +5959,7 @@ static uint32_t msm_sdcc_setup_vreg(int dev_id, unsigned int enable)
 	if (test_bit(dev_id, &vreg_sts) == enable)
 		return rc;
 
-	if ((!enable || enabled_once[dev_id - 1]) && dev_id != 4)
+	if (!enable || enabled_once[dev_id - 1])
 		return 0;
 
 	if (!curr)
@@ -6428,6 +6428,9 @@ static int msm_sdcc_get_wpswitch(struct device *dv)
 }
 #endif
 
+extern int wlan_register_status_notify();
+extern unsigned int wlan_status();
+
 #if defined(CONFIG_MMC_MSM_SDC1_SUPPORT)
 #if defined(CONFIG_CSDIO_VENDOR_ID) && \
 	defined(CONFIG_CSDIO_DEVICE_ID) && \
@@ -6448,6 +6451,8 @@ static struct mmc_platform_data msm7x30_sdc1_data = {
 	.ocr_mask	= MMC_VDD_165_195 | MMC_VDD_27_28 | MMC_VDD_28_29,
 	.translate_vdd	= msm_sdcc_setup_power,
 	.mmc_bus_width  = MMC_CAP_4_BIT_DATA,
+	.status	        = wlan_status,
+	.register_status_notify = wlan_register_status_notify,
 	.msmsdcc_fmin	= 144000,
 	.msmsdcc_fmid	= 24576000,
 	.msmsdcc_fmax	= 24576000,

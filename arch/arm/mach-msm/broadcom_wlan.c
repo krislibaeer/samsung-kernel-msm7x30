@@ -168,16 +168,21 @@ static void *brcm_wlan_get_country_code(char *ccode)
 	return &brcm_wlan_translate_custom_table[0];
 }
 
-static int brcm_wlan_set_carddetect(int onoff)
+static int wlan_wifi_cd = 0;
+static void (*wlan_status_notify_cb)(int card_present, void *dev_id);
+static void *wlan_status_notify_cb_devid;
+int wlan_register_status_notify(void (*callback)(int, void *),
+	void *dev_id)
 {
-	struct mmc_host *mmc = platform_get_drvdata(&msm_device_sdc1);
-
-	printk(KERN_INFO"msm_device_sdc1.name= %d\n", msm_device_sdc1.id);
-
-	mmc_detect_change(mmc, msecs_to_jiffies(60));
-
-	printk(KERN_ERR "wlan_carddetect_en = %d ~~~\n", onoff);
+	wlan_status_notify_cb = callback;
+	wlan_status_notify_cb_devid = dev_id;
 	return 0;
+}
+
+unsigned int wlan_status(struct device *dev)
+{
+	printk("wlan_status called....\n");
+	return wlan_wifi_cd;
 }
 
 int brcm_wlan_power(int on)
@@ -225,6 +230,17 @@ int brcm_wlan_power(int on)
 	gpio_set_value (WLAN_RESET, on);
 	mdelay (10);
 	printk ("After %s: WLAN_EN_GPIO value before set is %d on=%d WLAN_RESET=%d \n", __func__, gpio_get_value (WLAN_EN_GPIO),on,gpio_get_value (WLAN_RESET));
+	return 0;
+}
+
+int brcm_wlan_set_carddetect(int val)
+{
+	wlan_wifi_cd = val;
+	if (wlan_status_notify_cb) {
+		printk ("%s: calling detect change\n", __func__);
+		wlan_status_notify_cb(val,
+			wlan_status_notify_cb_devid);
+	}
 	return 0;
 }
 
