@@ -1,5 +1,10 @@
+#include <linux/kernel.h>
+#include <linux/init.h>
 #include <linux/gpio.h>
+#include <linux/irq.h>
+#include <linux/platform_device.h>
 #include <linux/delay.h>
+#include <linux/err.h>
 #include <linux/skbuff.h>
 #include <linux/wlan_plat.h>
 #include <linux/mmc/host.h>
@@ -19,23 +24,23 @@
 #define WLAN_SECTION_SIZE_2	(PREALLOC_WLAN_BUF_NUM * 512)
 #define WLAN_SECTION_SIZE_3	(PREALLOC_WLAN_BUF_NUM * 1024)
 
-#define WLAN_SKB_BUF_NUM	17
+#define WLAN_SKB_BUF_NUM	16
 
 static struct sk_buff *wlan_static_skb[WLAN_SKB_BUF_NUM];
 
-struct wlan_mem_prealloc {
+struct wifi_mem_prealloc {
 	void *mem_ptr;
 	unsigned long size;
 };
 
-static struct wlan_mem_prealloc wlan_mem_array[PREALLOC_WLAN_SEC_NUM] = {
+static struct wifi_mem_prealloc wifi_mem_array[PREALLOC_WLAN_SEC_NUM] = {
 	{NULL, (WLAN_SECTION_SIZE_0 + PREALLOC_WLAN_SECTION_HEADER)},
 	{NULL, (WLAN_SECTION_SIZE_1 + PREALLOC_WLAN_SECTION_HEADER)},
 	{NULL, (WLAN_SECTION_SIZE_2 + PREALLOC_WLAN_SECTION_HEADER)},
 	{NULL, (WLAN_SECTION_SIZE_3 + PREALLOC_WLAN_SECTION_HEADER)}
 };
 
-void* brcm_wlan_mem_prealloc(int section, unsigned long size)
+static void *brcm_wlan_mem_prealloc(int section, unsigned long size)
 {
 	if (section == PREALLOC_WLAN_SEC_NUM)
 		return wlan_static_skb;
@@ -43,56 +48,42 @@ void* brcm_wlan_mem_prealloc(int section, unsigned long size)
 	if ((section < 0) || (section > PREALLOC_WLAN_SEC_NUM))
 		return NULL;
 
-	if (wlan_mem_array[section].size < size)
+	if (wifi_mem_array[section].size < size)
 		return NULL;
 
-	return wlan_mem_array[section].mem_ptr;
+	return wifi_mem_array[section].mem_ptr;
 }
 
-#define DHD_SKB_HDRSIZE 	336
-#define DHD_SKB_1PAGE_BUFSIZE	((PAGE_SIZE*1)-DHD_SKB_HDRSIZE)
-#define DHD_SKB_2PAGE_BUFSIZE	((PAGE_SIZE*2)-DHD_SKB_HDRSIZE)
-#define DHD_SKB_4PAGE_BUFSIZE	((PAGE_SIZE*4)-DHD_SKB_HDRSIZE)
-
-static int brcm_init_wlan_mem(void)
+static int brcm_init_wifi_mem(void)
 {
 	int i;
 	int j;
 
-	for (i = 0; i < 8; i++) {
-		wlan_static_skb[i] = dev_alloc_skb(DHD_SKB_1PAGE_BUFSIZE);
+	for (i = 0 ; i < WLAN_SKB_BUF_NUM ; i++) {
+		wlan_static_skb[i] = dev_alloc_skb(
+				((i < (WLAN_SKB_BUF_NUM / 2)) ? 4096 : 8192));
+
 		if (!wlan_static_skb[i])
 			goto err_skb_alloc;
 	}
-
-	for (; i < 16; i++) {
-		wlan_static_skb[i] = dev_alloc_skb(DHD_SKB_2PAGE_BUFSIZE);
-		if (!wlan_static_skb[i])
-			goto err_skb_alloc;
-	}
-
-	wlan_static_skb[i] = dev_alloc_skb(DHD_SKB_4PAGE_BUFSIZE);
-	if (!wlan_static_skb[i])
-		goto err_skb_alloc;
 
 	for (i = 0 ; i < PREALLOC_WLAN_SEC_NUM ; i++) {
-		wlan_mem_array[i].mem_ptr =
-				kmalloc(wlan_mem_array[i].size, GFP_KERNEL);
+		wifi_mem_array[i].mem_ptr =
+				kmalloc(wifi_mem_array[i].size, GFP_KERNEL);
 
-		if (!wlan_mem_array[i].mem_ptr)
+		if (!wifi_mem_array[i].mem_ptr)
 			goto err_mem_alloc;
 	}
-	printk("%s: WIFI MEM Allocated\n", __FUNCTION__);
 	return 0;
 
-err_mem_alloc:
+ err_mem_alloc:
 	pr_err("Failed to mem_alloc for WLAN\n");
 	for (j = 0 ; j < i ; j++)
-		kfree(wlan_mem_array[j].mem_ptr);
+		kfree(wifi_mem_array[j].mem_ptr);
 
 	i = WLAN_SKB_BUF_NUM;
 
-err_skb_alloc:
+ err_skb_alloc:
 	pr_err("Failed to skb_alloc for WLAN\n");
 	for (j = 0 ; j < i ; j++)
 		dev_kfree_skb(wlan_static_skb[j]);
@@ -185,10 +176,10 @@ unsigned int wlan_status(struct device *dev)
 	return wlan_wifi_cd;
 }
 
-int brcm_wlan_power(int on)
+int brcm_wlan_power(int onoff)
 {
-	printk ("Before %s: WLAN_EN_GPIO value before set is %d on=%d WLAN_RESET=%d \n", __func__, gpio_get_value (WLAN_EN_GPIO),on,gpio_get_value (WLAN_RESET));
-	if(on)
+	printk ("Before %s: WLAN_EN_GPIO value before set is %d on=%d WLAN_RESET=%d \n", __func__, gpio_get_value (WLAN_EN_GPIO),onoff,gpio_get_value (WLAN_RESET));
+	if(onoff)
 	{
 		if (gpio_tlmm_config (GPIO_CFG(WLAN_EN_GPIO, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_8MA), GPIO_CFG_ENABLE))
 		{
@@ -196,7 +187,7 @@ int brcm_wlan_power(int on)
 				return -1;
 		}
 
-		gpio_set_value (WLAN_EN_GPIO, on);
+		gpio_set_value (WLAN_EN_GPIO, onoff);
 	}
 	else
 	{
@@ -209,14 +200,14 @@ int brcm_wlan_power(int on)
 					return -1;
 			}
 
-			gpio_set_value (WLAN_EN_GPIO, on);
+			gpio_set_value (WLAN_EN_GPIO, onoff);
 		}
 		else
 		{
 			printk("BT is Enabled\n");
 		}
 	}
-	printk ("%s: WLAN_EN_GPIO value before set is %d on=%d \n", __func__, gpio_get_value (WLAN_EN_GPIO),on);
+	printk ("%s: WLAN_EN_GPIO value before set is %d on=%d \n", __func__, gpio_get_value (WLAN_EN_GPIO),onoff);
 	if (gpio_tlmm_config (GPIO_CFG(WLAN_RESET, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_8MA), GPIO_CFG_ENABLE))
 	{
 			printk (KERN_ERR "%s: Unable configure WLAN_RESET \n", __func__);
@@ -227,9 +218,9 @@ int brcm_wlan_power(int on)
 	gpio_set_value (WLAN_RESET, 0);
 	mdelay (100);
 	printk("Just Resetting WIFI ONCE,before POWER ON\n");
-	gpio_set_value (WLAN_RESET, on);
+	gpio_set_value (WLAN_RESET, onoff);
 	mdelay (10);
-	printk ("After %s: WLAN_EN_GPIO value before set is %d on=%d WLAN_RESET=%d \n", __func__, gpio_get_value (WLAN_EN_GPIO),on,gpio_get_value (WLAN_RESET));
+	printk ("After %s: WLAN_EN_GPIO value before set is %d on=%d WLAN_RESET=%d \n", __func__, gpio_get_value (WLAN_EN_GPIO),onoff,gpio_get_value (WLAN_RESET));
 	return 0;
 }
 
@@ -244,7 +235,7 @@ int brcm_wlan_set_carddetect(int val)
 	return 0;
 }
 
-int brcm_wlan_reset(int on)
+int brcm_wlan_reset(int onoff)
 {
 	printk("Reseting WLAN...\n");
 	if (gpio_tlmm_config (GPIO_CFG(WLAN_RESET, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_8MA), GPIO_CFG_ENABLE))
@@ -253,7 +244,7 @@ int brcm_wlan_reset(int on)
 		return -1;
 	}
 
-	gpio_set_value (WLAN_RESET, on);
+	gpio_set_value (WLAN_RESET, onoff);
 	return 0;
 }
 
@@ -288,7 +279,7 @@ int __init brcm_wlan_init(void)
 {
 	printk(KERN_INFO "%s: start\n", __func__);
 
-	brcm_init_wlan_mem();
+	brcm_init_wifi_mem();
 
 	return platform_device_register(&brcm_device_wlan);
 }
