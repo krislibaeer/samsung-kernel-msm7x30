@@ -1,28 +1,5 @@
 # bcmdhd
 DHDCFLAGS = -Wall -Wstrict-prototypes -Dlinux -DBCMDRIVER                     \
-<<<<<<< HEAD
-	-DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DWLBTAMP -DBCMFILEIMAGE  \
-	-DDHDTHREAD -DDHD_GPL -DDHD_SCHED -DDHD_DEBUG -DSDTEST -DBDC -DTOE    \
-	-DDHD_BCMEVENTS -DSHOW_EVENTS -DDONGLEOVERLAYS -DBCMDBG               \
-	-DCUSTOMER_HW2 -DOOB_INTR_ONLY -DHW_OOB                               \
-	-DMMC_SDIO_ABORT -DBCMSDIO -DBCMLXSDMMC -DBCMPLATFORM_BUS -DWLP2P     \
-	-DNEW_COMPAT_WIRELESS -DWIFI_ACT_FRAME -DARP_OFFLOAD_SUPPORT          \
-	-DKEEP_ALIVE -DCSCAN -DGET_CUSTOM_MAC_ENABLE -DPKT_FILTER_SUPPORT     \
-	-DEMBEDDED_PLATFORM -DENABLE_INSMOD_NO_FW_LOAD -DPNO_SUPPORT          \
-	-DSET_RANDOM_MAC_SOFTAP -DWL_CFG80211_STA_EVENT                       \
-	-Idrivers/net/wireless/bcmdhd -Idrivers/net/wireless/bcmdhd/include
-
-DHDOFILES = aiutils.o bcmsdh_sdmmc_linux.o dhd_linux.o siutils.o bcmutils.o   \
-	dhd_linux_sched.o bcmwifi.o dhd_sdio.o bcmevent.o dhd_bta.o hndpmu.o  \
-	bcmsdh.o dhd_cdc.o bcmsdh_linux.o dhd_common.o linux_osl.o            \
-	bcmsdh_sdmmc.o dhd_custom_gpio.o sbutils.o wldev_common.o wl_android.o dhd_cfg80211.o
-
-obj-$(CONFIG_BCMDHD) += bcmdhd.o
-bcmdhd-objs += $(DHDOFILES)
-ifneq ($(CONFIG_WIRELESS_EXT),)
-bcmdhd-objs += wl_iw.o
-DHDCFLAGS += -DSOFTAP -DWL_WIRELESS_EXT
-=======
         -DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DWLBTAMP -DBCMFILEIMAGE  \
         -DDHDTHREAD -DDHD_GPL -DDHD_SCHED -DDHD_DEBUG -DBDC                   \
         -DDHD_BCMEVENTS -DSHOW_EVENTS -DDONGLEOVERLAYS -DBCMDBG               \
@@ -37,7 +14,6 @@ DHDCFLAGS += -DBCM4329_CHIP
 DHDCFLAGS += -DMCAST_LIST_ACCUMULATION
 DHDCFLAGS += -DCONFIG_CONTROL_PM
 DHDCFLAGS += -DROAM_ENABLE -DROAM_API -DROAM_CHANNEL_CACHE
->>>>>>> 54ad144abaf7014a3eaf105bd434048ce71c9ea8
 endif
 
 ifeq ($(CONFIG_BCM4329),y)
@@ -90,17 +66,6 @@ EXTRA_CFLAGS += -I$(src)/src/wl/bcmwifi/src/
 EXTRA_CFLAGS += -I$(src)/src/wl/bcmwifi/include/
 
 EXTRA_LDFLAGS += --strip-debug
-<<<<<<< HEAD
-endif
-
-ifeq ($(CONFIG_MACH_ANCORA),y)
-EXTRA_CFLAGS += -DREAD_MACADDR
-else ifeq ($(CONFIG_MACH_ANCORA_TMO),y)
-EXTRA_CFLAGS += -DREAD_MACADDR
-else ifeq ($(CONFIG_MACH_ARIESVE),y)
-EXTRA_CFLAGS += -DWRITE_MACADDR
-endif
-=======
 KBUILD_CFLAGS += -I$(LINUXDIR)/include -I$(shell pwd)
 
 obj-m   += dhd.o
@@ -146,4 +111,3 @@ clean:
 install:
 	@$(MAKE) --no-print-directory -C $(KDIR) \
 		SUBDIRS=$(CURDIR) modules_install
->>>>>>> 54ad144abaf7014a3eaf105bd434048ce71c9ea8

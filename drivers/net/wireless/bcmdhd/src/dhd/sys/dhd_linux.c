@@ -611,14 +611,9 @@ static void dhd_set_packet_filter(int value, dhd_pub_t *dhd)
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 {
-<<<<<<< HEAD:drivers/net/wireless/bcmdhd/dhd_linux.c
-#if 0
-=======
 	char iovbuf[32];
 #ifndef CUSTOMER_HW_SAMSUNG
->>>>>>> 54ad144abaf7014a3eaf105bd434048ce71c9ea8:drivers/net/wireless/bcmdhd/src/dhd/sys/dhd_linux.c
 	int power_mode = PM_MAX;
-#endif
 	/* wl_pkt_filter_enable_t	enable_parm; */
 	int bcn_li_dtim = 3;
 	uint roamvar = 1;
@@ -641,17 +636,12 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 			dhd->early_suspended = 1;
 #endif
 
-#if 0
 			/* Kernel suspended */
 			DHD_ERROR(("%s: force extra Suspend setting \n", __FUNCTION__));
 
 #ifndef CUSTOMER_HW_SAMSUNG
 			dhd_wl_ioctl_cmd(dhd, WLC_SET_PM, (char *)&power_mode,
-<<<<<<< HEAD:drivers/net/wireless/bcmdhd/dhd_linux.c
-			                 sizeof(power_mode), TRUE, 0);
-=======
 				sizeof(power_mode), TRUE, 0);
->>>>>>> 54ad144abaf7014a3eaf105bd434048ce71c9ea8:drivers/net/wireless/bcmdhd/src/dhd/sys/dhd_linux.c
 #endif
 
 			/* Enable packet filter, only allow unicast packet to send up */
@@ -690,25 +680,17 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 #endif
 		} else {
 
-<<<<<<< HEAD:drivers/net/wireless/bcmdhd/dhd_linux.c
-#if 0
-=======
 #ifdef PKT_FILTER_SUPPORT
 			dhd->early_suspended = 0;
 #endif
 
->>>>>>> 54ad144abaf7014a3eaf105bd434048ce71c9ea8:drivers/net/wireless/bcmdhd/src/dhd/sys/dhd_linux.c
 			/* Kernel resumed  */
 			DHD_ERROR(("%s: Remove extra suspend setting \n", __FUNCTION__));
 
 #ifndef CUSTOMER_HW_SAMSUNG
 			power_mode = PM_FAST;
 			dhd_wl_ioctl_cmd(dhd, WLC_SET_PM, (char *)&power_mode,
-<<<<<<< HEAD:drivers/net/wireless/bcmdhd/dhd_linux.c
-			                 sizeof(power_mode), TRUE, 0);
-=======
 				sizeof(power_mode), TRUE, 0);
->>>>>>> 54ad144abaf7014a3eaf105bd434048ce71c9ea8:drivers/net/wireless/bcmdhd/src/dhd/sys/dhd_linux.c
 #endif
 
 			/* disable pkt filter */
@@ -3238,182 +3220,6 @@ fail:
 	return NULL;
 }
 
-#ifdef READ_MACADDR
-static int
-dhd_read_macaddr(dhd_info_t *dhd)
-{
-	struct file *fp		= NULL;
-	struct file *fpnv	= NULL;
-	char macbuffer[18]	= {0};
-	mm_segment_t oldfs	= {0};
-	char randommac[3]	= {0};
-	char buf[18]		= {0};
-	char* filepath		= "/data/.mac.info";
-	char* nvfilepath	= "/data/.nvmac.info";
-	int ret = 0;
-
-	// MAC address copied from nv
-	fpnv = filp_open(nvfilepath, O_RDONLY, 0);
-	if ((fpnv == NULL) || IS_ERR(fpnv)) {
-start_readmac:
-	fpnv = NULL;
-	fp = filp_open(filepath, O_RDONLY, 0);
-
-	if ((fp==NULL) || IS_ERR(fp)) {
-		/* File Doesn't Exist. Create and write mac addr. */
-		fp = filp_open(filepath, O_RDWR | O_CREAT, 0666);
-		if (IS_ERR(fp)) {
-			if (fp)
-				filp_close(fp,NULL);
-			if (fpnv)
-				filp_close(fpnv,NULL);
-			DHD_ERROR(("[WIFI] %s: File open error\n", filepath));
-			return -1;
-		}
-
-		oldfs = get_fs();
-		set_fs(get_ds());
-
-		/* Generating the Random Bytes for 3 last octects of the MAC address */
-		get_random_bytes(randommac, 3);
-
-		sprintf(macbuffer,"%02X:%02X:%02X:%02X:%02X:%02X\n",
-			0x60,0xd0,0xa9,randommac[0],randommac[1],randommac[2]);
-			DHD_INFO(("[WIFI] The Random Generated MAC ID : %s\n", macbuffer));
-			printk("[WIFI] The Random Generated MAC ID : %s\n", macbuffer);
-
-			if (fp->f_mode & FMODE_WRITE) {
-				ret = fp->f_op->write(fp, (const char *)macbuffer, sizeof(macbuffer), &fp->f_pos);
-				if (ret < 0)
-					DHD_ERROR(("[WIFI] Mac address [%s] Failed to write into File: %s\n", macbuffer, filepath));
-				else
-					DHD_INFO(("[WIFI] Mac address [%s] written into File: %s\n", macbuffer, filepath));
-			}
-			set_fs(oldfs);
-		}
-		/* Reading the MAC Address from .mac.info file( the existed file or just created file) */
-		ret = kernel_read(fp, 0, buf, 18);
-	}
-	else {
-		/* Reading the MAC Address from .nvmac.info file( the existed file or just created file) */
-		ret = kernel_read(fpnv, 0, buf, 18);
-		buf[17] ='\0';   // to prevent abnormal string display when mac address is displayed on the screen.
-		printk("Read MAC : [%s] [%d] \r\n" , buf, strncmp(buf , "00:00:00:00:00:00" , 17));
-		if (strncmp(buf , "00:00:00:00:00:00" , 17) == 0) {
-			filp_close(fpnv, NULL);
-			goto start_readmac;
-		}
-
-		fp = filp_open(filepath, O_RDWR | O_CREAT, 0666); // File is always created.
-			if (IS_ERR(fp)) {
-				DHD_ERROR(("[WIFI] %s: File open error\n", filepath));
-			if (fpnv)
-				filp_close(fpnv, NULL);
-				return -1;
-			}
-		else {
-			oldfs = get_fs();
-			set_fs(get_ds());
-
-			if (fp->f_mode & FMODE_WRITE) {
-				ret = fp->f_op->write(fp, (const char *)buf, sizeof(buf), &fp->f_pos);
-				if(ret < 0)
-					DHD_ERROR(("[WIFI] Mac address [%s] Failed to write into File: %s\n", buf, filepath));
-				else
-					DHD_INFO(("[WIFI] Mac address [%s] written into File: %s\n", buf, filepath));
-			}
-			set_fs(oldfs);
-
-		ret = kernel_read(fp, 0, buf, 18);
-		}
-	}
-
-	if (ret)
-		sscanf(buf,"%02X:%02X:%02X:%02X:%02X:%02X",
-			   &dhd->pub.mac.octet[0], &dhd->pub.mac.octet[1], &dhd->pub.mac.octet[2],
-			   &dhd->pub.mac.octet[3], &dhd->pub.mac.octet[4], &dhd->pub.mac.octet[5]);
-	else
-		DHD_ERROR(("dhd_bus_start: Reading from the '%s' returns 0 bytes\n", filepath));
-
-	if (fp)
-		filp_close(fp, NULL);
-	if (fpnv)
-		filp_close(fpnv, NULL);
-
-	/* Writing Newly generated MAC ID to the Dongle */
-	if (0 == _dhd_set_mac_address(dhd, 0, &dhd->pub.mac))
-		DHD_INFO(("dhd_bus_start: MACID is overwritten\n"));
-	else
-		DHD_ERROR(("dhd_bus_start: _dhd_set_mac_address() failed\n"));
-
-	return 0;
-}
-#endif /* READ_MACADDR */
-
-#ifdef WRITE_MACADDR
-static int
-dhd_write_macaddr(char *addr)
-{
-	struct file *fp		= NULL;
-	char filepath[40]	= {0};
-	char macbuffer[18]	= {0};
-	int ret			= 0;
-	mm_segment_t oldfs	= {0};
-
-	strcpy(filepath, "/data/.mac.info");
-
-	fp = filp_open(filepath, O_RDWR, 0);
-	if (IS_ERR(fp))
-	{
-		/* File Doesn't Exist. Create and write mac addr. */
-		fp = filp_open(filepath, O_RDWR | O_CREAT, 0666);
-		if (IS_ERR(fp))
-		{
-			fp = NULL;
-				DHD_ERROR(("[WIFI] %s: File open error \n", filepath));
-			return -1;
-		}
-
-		oldfs = get_fs();
-		set_fs(get_ds());
-
-		sprintf(macbuffer,"%02X:%02X:%02X:%02X:%02X:%02X\n",
-			addr[0],addr[1],addr[2],addr[3],addr[4],addr[5]);
-
-		if (fp->f_mode & FMODE_WRITE)
-		{
-			ret = fp->f_op->write(fp, (const char *)macbuffer, sizeof(macbuffer), &fp->f_pos);
-				DHD_INFO(("[WIFI] Mac address [%s] written into File:%s \n", macbuffer, filepath));
-		}
-		set_fs(oldfs);
-	}
-	else {
-		char buf[18] = {0};
-		int nread = kernel_read(fp, 0, buf, 256);
-
-		if (nread < 10) {
-		oldfs = get_fs();
-		set_fs(get_ds());
-
-		sprintf(macbuffer,"%02X:%02X:%02X:%02X:%02X:%02X\n",
-			addr[0],addr[1],addr[2],addr[3],addr[4],addr[5]);
-
-			if (fp->f_mode & FMODE_WRITE)
-			{
-				ret = fp->f_op->write(fp, (const char *)macbuffer, sizeof(macbuffer), &fp->f_pos);
-					DHD_INFO(("[WIFI] Mac address [%s] written into File:%s \n", macbuffer, filepath));
-			}
-			set_fs(oldfs);
-		}
-	}
-
-	if (fp)
-		filp_close(fp, NULL);
-
-	return 0;
-}
-#endif /* WRITE_MACADDR */
-
 int
 dhd_bus_start(dhd_pub_t *dhdp)
 {
@@ -3525,15 +3331,10 @@ dhd_bus_start(dhd_pub_t *dhdp)
 	dhd_check_module_mac(dhdp);
 #endif
 #ifdef READ_MACADDR
-<<<<<<< HEAD:drivers/net/wireless/bcmdhd/dhd_linux.c
-	if (dhd_read_macaddr(dhd) < 0)
-		return -ENODEV;
-=======
 	dhd_read_macaddr(dhd, &dhd->pub.mac);
 #endif
 #ifdef RDWR_MACADDR
 	dhd_check_rdwr_macaddr(dhd, &dhd->pub, &dhd->pub.mac);
->>>>>>> 54ad144abaf7014a3eaf105bd434048ce71c9ea8:drivers/net/wireless/bcmdhd/src/dhd/sys/dhd_linux.c
 #endif
 #ifdef RDWR_KORICS_MACADDR
 	dhd_write_rdwr_korics_macaddr(dhd, &dhd->pub.mac);

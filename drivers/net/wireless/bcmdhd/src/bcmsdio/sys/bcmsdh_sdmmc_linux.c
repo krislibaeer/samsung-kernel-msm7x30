@@ -194,10 +194,7 @@ static int bcmsdh_sdmmc_suspend(struct device *pdev)
 
 	if (dhd_os_check_wakelock(bcmsdh_get_drvdata()))
 		return -EBUSY;
-<<<<<<< HEAD:drivers/net/wireless/bcmdhd/bcmsdh_sdmmc_linux.c
-=======
 #if !defined(CUSTOMER_HW_SAMSUNG)
->>>>>>> 54ad144abaf7014a3eaf105bd434048ce71c9ea8:drivers/net/wireless/bcmdhd/src/bcmsdio/sys/bcmsdh_sdmmc_linux.c
 #if defined(OOB_INTR_ONLY)
 	bcmsdh_oob_intr_set(0);
 #endif	/* defined(OOB_INTR_ONLY) */
