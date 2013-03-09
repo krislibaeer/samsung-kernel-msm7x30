@@ -1,20 +1,18 @@
-#include <linux/kernel.h>
-#include <linux/init.h>
 #include <linux/gpio.h>
-#include <linux/irq.h>
-#include <linux/platform_device.h>
 #include <linux/delay.h>
-#include <linux/err.h>
 #include <linux/skbuff.h>
 #include <linux/wlan_plat.h>
 #include <linux/mmc/host.h>
 
 #include "devices.h"
 
-#define WLAN_EN_GPIO	144
+#define WLAN_HOST_WAKE	111
 #define WLAN_RESET	127
+#define WLAN_EN_GPIO	144
 #define GPIO_BT_RESET	146
 
+#define WLAN_STATIC_SCAN_BUF0		5
+#define WLAN_STATIC_SCAN_BUF1		6
 #define PREALLOC_WLAN_SEC_NUM		4
 #define PREALLOC_WLAN_BUF_NUM		160
 #define PREALLOC_WLAN_SECTION_HEADER	24
@@ -24,62 +22,88 @@
 #define WLAN_SECTION_SIZE_2	(PREALLOC_WLAN_BUF_NUM * 512)
 #define WLAN_SECTION_SIZE_3	(PREALLOC_WLAN_BUF_NUM * 1024)
 
-#define WLAN_SKB_BUF_NUM	16
+#define DHD_SKB_HDRSIZE		336
+#define DHD_SKB_1PAGE_BUFSIZE	((PAGE_SIZE*1)-DHD_SKB_HDRSIZE)
+#define DHD_SKB_2PAGE_BUFSIZE	((PAGE_SIZE*2)-DHD_SKB_HDRSIZE)
+#define DHD_SKB_4PAGE_BUFSIZE	((PAGE_SIZE*4)-DHD_SKB_HDRSIZE)
+
+#define WLAN_SKB_BUF_NUM	17
 
 static struct sk_buff *wlan_static_skb[WLAN_SKB_BUF_NUM];
 
-struct wifi_mem_prealloc {
+struct wlan_mem_prealloc {
 	void *mem_ptr;
 	unsigned long size;
 };
 
-static struct wifi_mem_prealloc wifi_mem_array[PREALLOC_WLAN_SEC_NUM] = {
+static struct wlan_mem_prealloc wlan_mem_array[PREALLOC_WLAN_SEC_NUM] = {
 	{NULL, (WLAN_SECTION_SIZE_0 + PREALLOC_WLAN_SECTION_HEADER)},
 	{NULL, (WLAN_SECTION_SIZE_1 + PREALLOC_WLAN_SECTION_HEADER)},
 	{NULL, (WLAN_SECTION_SIZE_2 + PREALLOC_WLAN_SECTION_HEADER)},
 	{NULL, (WLAN_SECTION_SIZE_3 + PREALLOC_WLAN_SECTION_HEADER)}
 };
 
+void *wlan_static_scan_buf0;
+void *wlan_static_scan_buf1;
 static void *brcm_wlan_mem_prealloc(int section, unsigned long size)
 {
 	if (section == PREALLOC_WLAN_SEC_NUM)
 		return wlan_static_skb;
-
+	if (section == WLAN_STATIC_SCAN_BUF0)
+		return wlan_static_scan_buf0;
+	if (section == WLAN_STATIC_SCAN_BUF1)
+		return wlan_static_scan_buf1;
 	if ((section < 0) || (section > PREALLOC_WLAN_SEC_NUM))
 		return NULL;
 
-	if (wifi_mem_array[section].size < size)
+	if (wlan_mem_array[section].size < size)
 		return NULL;
 
-	return wifi_mem_array[section].mem_ptr;
+	return wlan_mem_array[section].mem_ptr;
 }
 
-static int brcm_init_wifi_mem(void)
+static int brcm_init_wlan_mem(void)
 {
 	int i;
 	int j;
 
-	for (i = 0 ; i < WLAN_SKB_BUF_NUM ; i++) {
-		wlan_static_skb[i] = dev_alloc_skb(
-				((i < (WLAN_SKB_BUF_NUM / 2)) ? 4096 : 8192));
-
+	for (i = 0; i < 8; i++) {
+		wlan_static_skb[i] = dev_alloc_skb(DHD_SKB_1PAGE_BUFSIZE);
 		if (!wlan_static_skb[i])
 			goto err_skb_alloc;
 	}
 
-	for (i = 0 ; i < PREALLOC_WLAN_SEC_NUM ; i++) {
-		wifi_mem_array[i].mem_ptr =
-				kmalloc(wifi_mem_array[i].size, GFP_KERNEL);
+	for (; i < 16; i++) {
+		wlan_static_skb[i] = dev_alloc_skb(DHD_SKB_2PAGE_BUFSIZE);
+		if (!wlan_static_skb[i])
+			goto err_skb_alloc;
+	}
 
-		if (!wifi_mem_array[i].mem_ptr)
+	wlan_static_skb[i] = dev_alloc_skb(DHD_SKB_4PAGE_BUFSIZE);
+	if (!wlan_static_skb[i])
+		goto err_skb_alloc;
+
+	for (i = 0 ; i < PREALLOC_WLAN_SEC_NUM ; i++) {
+		wlan_mem_array[i].mem_ptr =
+				kmalloc(wlan_mem_array[i].size, GFP_KERNEL);
+
+		if (!wlan_mem_array[i].mem_ptr)
 			goto err_mem_alloc;
 	}
+	wlan_static_scan_buf0 = kmalloc(65536, GFP_KERNEL);
+	if (!wlan_static_scan_buf0)
+		goto err_mem_alloc;
+	wlan_static_scan_buf1 = kmalloc(65536, GFP_KERNEL);
+	if (!wlan_static_scan_buf1)
+		goto err_mem_alloc;
+
+	printk(KERN_INFO "%s: WIFI MEM Allocated\n", __func__);
 	return 0;
 
  err_mem_alloc:
 	pr_err("Failed to mem_alloc for WLAN\n");
 	for (j = 0 ; j < i ; j++)
-		kfree(wifi_mem_array[j].mem_ptr);
+		kfree(wlan_mem_array[j].mem_ptr);
 
 	i = WLAN_SKB_BUF_NUM;
 
@@ -92,7 +116,7 @@ static int brcm_init_wifi_mem(void)
 }
 
 /* Customized Locale table : OPTIONAL feature */
-#define WLC_CNTRY_BUF_SZ	4
+#define WLC_CNTRY_BUF_SZ        4
 typedef struct cntry_locales_custom {
 	char iso_abbrev[WLC_CNTRY_BUF_SZ];
 	char custom_locale[WLC_CNTRY_BUF_SZ];
@@ -251,8 +275,8 @@ int brcm_wlan_reset(int onoff)
 static struct resource brcm_wlan_resources[] = {
 	[0] = {
 		.name   = "bcm4329_wlan_irq",
-		.start  = MSM_GPIO_TO_INT(111),
-		.end    = MSM_GPIO_TO_INT(111),
+		.start  = MSM_GPIO_TO_INT(WLAN_HOST_WAKE),
+		.end    = MSM_GPIO_TO_INT(WLAN_HOST_WAKE),
 		.flags  = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHLEVEL | IORESOURCE_IRQ_SHAREABLE,
 	},
 };
@@ -261,7 +285,9 @@ static struct wifi_platform_data brcm_wlan_control = {
 	.set_power		= brcm_wlan_power,
 	.set_reset		= brcm_wlan_reset,
 	.set_carddetect		= brcm_wlan_set_carddetect,
+#ifdef CONFIG_BROADCOM_WIFI_RESERVED_MEM
 	.mem_prealloc		= brcm_wlan_mem_prealloc,
+#endif
 	.get_country_code	= brcm_wlan_get_country_code,
 };
 
@@ -279,7 +305,9 @@ int __init brcm_wlan_init(void)
 {
 	printk(KERN_INFO "%s: start\n", __func__);
 
-	brcm_init_wifi_mem();
+#ifdef CONFIG_BROADCOM_WIFI_RESERVED_MEM
+	brcm_init_wlan_mem();
+#endif
 
 	return platform_device_register(&brcm_device_wlan);
 }
