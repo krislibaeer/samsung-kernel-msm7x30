@@ -77,7 +77,9 @@
 #include <linux/platform_data/qcom_crypto_device.h>
 
 #include "devices.h"
+#ifdef CONFIG_ANDROID_RAM_CONSOLE
 #include "devices-msm7x30.h"
+#endif
 #include "timer.h"
 #ifdef CONFIG_USB_G_ANDROID
 #include <linux/usb/android.h>
@@ -5681,7 +5683,9 @@ static struct platform_device *devices[] __initdata = {
 	&sec_device_jack,
 #endif
 
+#ifdef CONFIG_ANDROID_RAM_CONSOLE
 	&ram_console_device,
+#endif
 };
 
 static struct msm_gpio msm_i2c_gpios_hw[] = {
@@ -7599,17 +7603,8 @@ static void __init msm7x30_allocate_memory_regions(void)
 	pr_info("allocating %lu bytes at %p (%lx physical) for fb\n",
 		size, addr, __pa(addr));
 
-<<<<<<< HEAD
-    /* RAM Console can't use alloc_bootmem(), since that zeroes the
-     * region */
-    size = MSM_RAM_CONSOLE_SIZE;
-    ram_console_resources[0].start = msm_fb_resources[0].end+1;
-    ram_console_resources[0].end = ram_console_resources[0].start + size - 1;
-    pr_info("allocating %lu bytes at (%lx physical) for ram console\n",
-            size, (unsigned long)ram_console_resources[0].start);
-    /* We still have to reserve it, though */
-    reserve_bootmem(ram_console_resources[0].start,size,0);
-=======
+
+#ifdef CONFIG_ANDROID_RAM_CONSOLE
 	/* RAM Console can't use alloc_bootmem(), since that zeroes the
 	 * region */
 	size = MSM_RAM_CONSOLE_SIZE;
@@ -7619,7 +7614,7 @@ static void __init msm7x30_allocate_memory_regions(void)
 		size, (unsigned long)ram_console_resources[0].start);
 	/* We still have to reserve it, though */
 	reserve_bootmem(ram_console_resources[0].start,size,0);
->>>>>>> 9159cfe2a913fb1a628e8c0515c05fc15afd5154
+#endif
 }
 
 static void __init msm7x30_map_io(void)
