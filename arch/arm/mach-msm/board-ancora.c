@@ -77,6 +77,9 @@
 #include <linux/platform_data/qcom_crypto_device.h>
 
 #include "devices.h"
+#ifdef CONFIG_ANDROID_RAM_CONSOLE
+#include "devices-msm7x30.h"
+#endif
 #include "timer.h"
 #ifdef CONFIG_USB_G_ANDROID
 #include <linux/usb/android.h>
@@ -137,9 +140,7 @@
 #define GPIO_WLAN_LEVEL_HIGH	1
 #define GPIO_WLAN_LEVEL_NONE	2
 
-#define WLAN_EN_GPIO		144 //WLAN_BT_EN
 #define WLAN_RESET		127 //Reset
-#define WLAN_HOST_WAKE		111
 
 struct class *sec_class;
 EXPORT_SYMBOL(sec_class);
@@ -5597,6 +5598,9 @@ static struct platform_device *devices[] __initdata = {
 #ifdef CONFIG_SAMSUNG_JACK
 	&sec_device_jack,
 #endif
+#ifdef CONFIG_ANDROID_RAM_CONSOLE
+	&ram_console_device,
+#endif
 };
 
 static struct msm_gpio msm_i2c_gpios_hw[] = {
@@ -5838,11 +5842,6 @@ static uint32_t msm_sdcc_setup_gpio(int dev_id, unsigned int enable)
 {
 	int rc = 0;
 	struct sdcc_gpio *curr;
-
-	if ((dev_id == 1) && (gpio_get_value(WLAN_RESET)))
-	{
-		return 0;
-	}
 
 	curr = &sdcc_cfg_data[dev_id - 1];
 
@@ -6477,49 +6476,6 @@ out:
 }
 #endif
 
-int msm_wlan_gpio_init ( void )
-{
-	printk(KERN_ERR "%s: msm_wlan_gpio_init\n", __func__);
-	if (gpio_tlmm_config (GPIO_CFG(WLAN_EN_GPIO, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA), GPIO_CFG_ENABLE))
-	{
-		printk (KERN_ERR "%s: Unable configure WLAN_EN_GPIO\n", __func__);
-		return -EIO;
-	}
-	if (gpio_request (WLAN_EN_GPIO, "wlan_en"))
-	{
-		printk (KERN_ERR "%s: Unable to request WLAN_EN_GPIO", __func__);
-		return -EINVAL;
-	}
-
-#if 0
-	if (gpio_tlmm_config (GPIO_CFG(WLAN_RESET, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_8MA), GPIO_CFG_ENABLE))
-	{
-		printk (KERN_ERR "%s: Unable configure WLAN_RESET \n", __func__);
-		return -EIO;
-	}
-	if (gpio_request (WLAN_RESET, "wlan_reset"))
-	{
-		printk (KERN_ERR "%s: Unable to request WLAN_RESET ", __func__);
-		return -EINVAL;
-	}
-#endif
-	if (gpio_tlmm_config (GPIO_CFG(WLAN_HOST_WAKE, 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_8MA), GPIO_CFG_ENABLE))
-	{
-		printk (KERN_ERR "%s: Unable configure WLAN_WAKEUP \n", __func__);
-		return -EIO;
-	}
-	if (gpio_request (WLAN_HOST_WAKE, "wlan_wakeup"))
-	{
-		printk (KERN_ERR "%s: Unable to request WLAN_WAKEUP ", __func__);
-		return -EINVAL;
-	}
-
-	gpio_set_value (WLAN_EN_GPIO, 0);
-	gpio_set_value (WLAN_RESET, 0);
-
-	return 0;
-}
-
 static int mmc_regulator_init(int sdcc_no, const char *supply, int uV)
 {
 	int rc;
@@ -6556,13 +6512,6 @@ out:
 
 static void __init msm7x30_init_mmc(void)
 {
-#if 1
-		if (msm_wlan_gpio_init ())
-			printk (KERN_ERR "%s: Unable to initialize wlan GPIO's\n", __func__);
-		else
-			printk (KERN_ERR "%s: Initialized wlan GPIO's\n", __func__);
-#endif
-
 #ifdef CONFIG_MMC_MSM_SDC1_SUPPORT
 	if (mmc_regulator_init(1, "s3", 1800000))
 		goto out1;
@@ -7512,6 +7461,18 @@ static void __init msm7x30_allocate_memory_regions(void)
 	msm_fb_resources[0].end = msm_fb_resources[0].start + size - 1;
 	pr_info("allocating %lu bytes at %p (%lx physical) for fb\n",
 		size, addr, __pa(addr));
+
+#ifdef CONFIG_ANDROID_RAM_CONSOLE
+	/* RAM Console can't use alloc_bootmem(), since that zeroes the
+	 * region */
+	size = MSM_RAM_CONSOLE_SIZE;
+	ram_console_resources[0].start = msm_fb_resources[0].end+1;
+	ram_console_resources[0].end = ram_console_resources[0].start + size - 1;
+	pr_info("allocating %lu bytes at (%lx physical) for ram console\n",
+		size, (unsigned long)ram_console_resources[0].start);
+	/* We still have to reserve it, though */
+	reserve_bootmem(ram_console_resources[0].start,size,0);
+#endif
 }
 
 static void __init msm7x30_map_io(void)
