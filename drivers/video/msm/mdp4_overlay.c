@@ -787,36 +787,52 @@ static void mdp4_overlay_vg_get_src_offset(struct mdp4_overlay_pipe *pipe,
 	*luma_off = 0;
 	*chroma_off = 0;
 
-	if (pipe->src_x && (pipe->frame_format ==
+	if ((pipe->src_x || pipe->src_y) && (pipe->frame_format ==
 		MDP4_FRAME_FORMAT_LINEAR)) {
-		src_xy = (pipe->src_y << 16) | pipe->src_x;
-		src_xy &= 0xffff0000;
+		src_xy = 0;
 		outpdw(vg_base + 0x0004, src_xy);	/* MDP_RGB_SRC_XY */
 
 		switch (pipe->src_format) {
 		case MDP_Y_CR_CB_H2V2:
 		case MDP_Y_CR_CB_GH2V2:
 		case MDP_Y_CB_CR_H2V2:
-				*luma_off = pipe->src_x;
-				*chroma_off = pipe->src_x/2;
+			*luma_off = pipe->src_x +
+				(pipe->src_y * pipe->srcp0_ystride);
+			*chroma_off = pipe->src_x / 2 +
+				((pipe->src_y / 2) * pipe->srcp1_ystride);
 			break;
 
 		case MDP_Y_CBCR_H2V2_TILE:
 		case MDP_Y_CRCB_H2V2_TILE:
 		case MDP_Y_CBCR_H2V2:
 		case MDP_Y_CRCB_H2V2:
+			*luma_off = pipe->src_x +
+				(pipe->src_y * pipe->srcp0_ystride);
+			*chroma_off = pipe->src_x +
+				((pipe->src_y / 2) * pipe->srcp1_ystride);
+			break;
+
 		case MDP_Y_CRCB_H1V1:
 		case MDP_Y_CBCR_H1V1:
+			*luma_off = pipe->src_x +
+				(pipe->src_y * pipe->srcp0_ystride);
+			*chroma_off = pipe->src_x +
+				((pipe->src_y * 2) * pipe->srcp1_ystride);
+			break;
+
 		case MDP_Y_CRCB_H2V1:
 		case MDP_Y_CBCR_H2V1:
-			*luma_off = pipe->src_x;
-			*chroma_off = pipe->src_x;
+			*luma_off = pipe->src_x +
+				(pipe->src_y * pipe->srcp0_ystride);
+			*chroma_off = pipe->src_x +
+				(pipe->src_y * pipe->srcp1_ystride);
 			break;
 
 		case MDP_YCRYCB_H2V1:
 			if (pipe->src_x & 0x1)
 				pipe->src_x += 1;
-			*luma_off += pipe->src_x * 2;
+			*luma_off += pipe->src_x * 2 +
+				((pipe->src_y * 2) * pipe->srcp0_ystride);
 			break;
 
 		case MDP_ARGB_8888:
@@ -829,7 +845,8 @@ static void mdp4_overlay_vg_get_src_offset(struct mdp4_overlay_pipe *pipe,
 		case MDP_RGB_888:
 		case MDP_YCBCR_H1V1:
 		case MDP_YCRCB_H1V1:
-			*luma_off = pipe->src_x * pipe->bpp;
+			*luma_off = (pipe->src_x * pipe->bpp) +
+					(pipe->src_y * pipe->srcp0_ystride);
 			break;
 
 		default:
@@ -1900,29 +1917,21 @@ static void mdp4_overlay_bg_solidfill(struct blend_cfg *blend)
 	}
 
 	format = inpdw(base + 0x50);
-	if (blend->solidfill) {
-		format |= MDP4_FORMAT_SOLID_FILL;
-		/*
-		 * If solid fill is enabled, flip and scale
-		 * have to be disabled. otherwise, h/w
-		 * underruns.
-		 */
-		op_mode = inpdw(base + 0x0058);
-		op_mode &= ~(MDP4_OP_FLIP_LR + MDP4_OP_SCALEX_EN);
-		op_mode &= ~(MDP4_OP_FLIP_UD + MDP4_OP_SCALEY_EN);
-		outpdw(base + 0x0058, op_mode);
-		outpdw(base + 0x1008, 0);	/* black */
-		/*
-		 * Set src size and dst size same to avoid underruns
-		 */
-		outpdw(base + 0x0000, inpdw(base + 0x0008));
-	} else {
-		u32 src_size = ((pipe->src_h << 16) | pipe->src_w);
-		outpdw(base + 0x0000, src_size);
-		format &= ~MDP4_FORMAT_SOLID_FILL;
-		blend->solidfill_pipe = NULL;
-	}
-
+	format |= MDP4_FORMAT_SOLID_FILL;
+	/*
+	 * If solid fill is enabled, flip and scale
+	 * have to be disabled. otherwise, h/w
+	 * underruns.
+	 */
+	op_mode = inpdw(base + 0x0058);
+	op_mode &= ~(MDP4_OP_FLIP_LR + MDP4_OP_SCALEX_EN);
+	op_mode &= ~(MDP4_OP_FLIP_UD + MDP4_OP_SCALEY_EN);
+	outpdw(base + 0x0058, op_mode);
+	outpdw(base + 0x1008, 0);	/* black */
+	/*
+	 * Set src size and dst size same to avoid underruns
+	 */
+	outpdw(base + 0x0000, inpdw(base + 0x0008));
 	outpdw(base + 0x50, format);
 
 	mdp4_overlay_reg_flush(pipe, 0);
@@ -2105,8 +2114,10 @@ void mdp4_mixer_blend_setup(int mixer)
 		if (i == MDP4_MIXER_STAGE3)
 			off -= 4;
 
-		if (blend->solidfill_pipe)
+		if (blend->solidfill_pipe && blend->solidfill)
 			mdp4_overlay_bg_solidfill(blend);
+		else
+			blend->solidfill_pipe = NULL;
 
 		outpdw(overlay_base + off + 0x108, blend->fg_alpha);
 		outpdw(overlay_base + off + 0x10c, blend->bg_alpha);
@@ -2527,17 +2538,6 @@ static int mdp4_calc_pipe_mdp_clk(struct msm_fb_data_type *mfd,
 		return ret;
 	}
 
-	/*
-	 * Serveral special cases require the max mdp clk but cannot
-	 * be explained by mdp clk equation.
-	 */
-	if (pipe->flags & MDP_DEINTERLACE) {
-		pr_info("%s deinterlace requires max mdp clk.\n",
-			__func__);
-		pipe->req_clk = mdp_max_clk;
-		return 0;
-	}
-
 	pr_debug("%s: pipe sets: panel res(x,y)=(%d,%d)\n",
 		 __func__,  mfd->panel_info.xres, mfd->panel_info.yres);
 	pr_debug("%s: src(w,h)(%d,%d),src(x,y)(%d,%d)\n",
@@ -2655,7 +2655,8 @@ static int mdp4_calc_pipe_mdp_clk(struct msm_fb_data_type *mfd,
 	 * required(FIR).
 	 */
 	if ((mfd->panel_info.lcdc.v_back_porch <= 4) &&
-	    (pipe->src_h != pipe->dst_h)) {
+	    (pipe->src_h != pipe->dst_h) &&
+	    (mfd->panel_info.lcdc.v_back_porch)) {
 		u32 clk = 0;
 		clk = 4 * (pclk >> shift) / mfd->panel_info.lcdc.v_back_porch;
 		clk <<= shift;
@@ -2673,6 +2674,16 @@ static int mdp4_calc_pipe_mdp_clk(struct msm_fb_data_type *mfd,
 	if (rst < pclk) {
 		rst = ((pclk >> shift) * 23 / 20) << shift;
 		pr_debug("%s calculated mdp clk is less than pclk.\n",
+			__func__);
+	}
+
+	/*
+	 * Interlaced videos require the max mdp clk but cannot
+	 * be explained by mdp clk equation.
+	 */
+	if (pipe->flags & MDP_DEINTERLACE) {
+		rst = (rst > mdp_max_clk) ? rst : mdp_max_clk;
+		pr_info("%s deinterlace requires max mdp clk.\n",
 			__func__);
 	}
 
